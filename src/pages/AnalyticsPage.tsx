@@ -1,9 +1,37 @@
-import { dashboardStats, monthlyBudgetData, statusCounts, formatCurrency } from "@/lib/mock-data";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart } from "recharts";
+import { formatCurrency } from "@/lib/mock-data";
+import { useDashboardStats } from "@/hooks/use-projects";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart } from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PIE_COLORS = ["hsl(152,60%,40%)", "hsl(205,80%,50%)", "hsl(38,92%,50%)", "hsl(215,14%,65%)", "hsl(0,72%,51%)"];
 
+const monthlyBudgetData = [
+  { month: "Jul", budget: 380, expenditure: 210 },
+  { month: "Aug", budget: 420, expenditure: 250 },
+  { month: "Sep", budget: 460, expenditure: 290 },
+  { month: "Oct", budget: 510, expenditure: 340 },
+  { month: "Nov", budget: 540, expenditure: 380 },
+  { month: "Dec", budget: 580, expenditure: 420 },
+  { month: "Jan", budget: 620, expenditure: 460 },
+  { month: "Feb", budget: 650, expenditure: 490 },
+];
+
 const AnalyticsPage = () => {
+  const { data: stats, isLoading } = useDashboardStats();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div><h1 className="text-2xl font-bold font-display text-foreground">Analytics</h1></div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {[1, 2].map((i) => <Skeleton key={i} className="h-80 rounded-xl" />)}
+        </div>
+      </div>
+    );
+  }
+
+  const statusCounts = stats?.statusCounts ?? [];
+
   return (
     <div className="space-y-6">
       <div>
@@ -49,15 +77,15 @@ const AnalyticsPage = () => {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border bg-card p-5 card-shadow text-center">
-          <p className="text-3xl font-bold font-display text-foreground">{dashboardStats.completionRate}%</p>
+          <p className="text-3xl font-bold font-display text-foreground">{stats?.completionRate ?? 0}%</p>
           <p className="text-sm text-muted-foreground mt-1">Overall Completion Rate</p>
         </div>
         <div className="rounded-xl border bg-card p-5 card-shadow text-center">
-          <p className="text-3xl font-bold font-display text-foreground">{formatCurrency(dashboardStats.totalBudget)}</p>
+          <p className="text-3xl font-bold font-display text-foreground">{formatCurrency(stats?.totalBudget ?? 0)}</p>
           <p className="text-sm text-muted-foreground mt-1">Total Budget Allocation</p>
         </div>
         <div className="rounded-xl border bg-card p-5 card-shadow text-center">
-          <p className="text-3xl font-bold font-display text-foreground">{formatCurrency(dashboardStats.totalExpenditure)}</p>
+          <p className="text-3xl font-bold font-display text-foreground">{formatCurrency(stats?.totalExpenditure ?? 0)}</p>
           <p className="text-sm text-muted-foreground mt-1">Total Expenditure</p>
         </div>
       </div>

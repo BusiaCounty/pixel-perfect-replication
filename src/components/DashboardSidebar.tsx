@@ -1,6 +1,7 @@
 import { Building2, LayoutDashboard, FolderKanban, BarChart3, MapPin, Users, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +23,8 @@ const navItems = [
 ];
 
 export function DashboardSidebar() {
+  const { signOut } = useAuth();
+
   return (
     <Sidebar className="border-r-0">
       <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
@@ -54,10 +57,16 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border p-3">
+      <SidebarFooter className="border-t border-sidebar-border p-3 space-y-1">
         <Link to="/" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
           <LogOut className="h-3.5 w-3.5" /> Back to Public Site
         </Link>
+        <button
+          onClick={() => signOut()}
+          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-destructive hover:bg-destructive/10 transition-colors"
+        >
+          <LogOut className="h-3.5 w-3.5" /> Sign Out
+        </button>
       </SidebarFooter>
     </Sidebar>
   );

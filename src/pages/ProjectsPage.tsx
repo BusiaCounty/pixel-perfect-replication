@@ -5,23 +5,26 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { projects, formatCurrency, getStatusColor, departments } from "@/lib/mock-data";
+import { formatCurrency, getStatusColor } from "@/lib/mock-data";
+import { useProjects, useDepartments } from "@/hooks/use-projects";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ProjectsPage = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deptFilter, setDeptFilter] = useState<string>("all");
+  const { data: projects, isLoading } = useProjects();
+  const { data: departments } = useDepartments();
 
-  const filtered = projects.filter((p) => {
-    const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase()) || p.description.toLowerCase().includes(search.toLowerCase());
+  const filtered = (projects ?? []).filter((p) => {
+    const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase()) || (p.description ?? "").toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || p.status === statusFilter;
-    const matchesDept = deptFilter === "all" || p.department === deptFilter;
+    const matchesDept = deptFilter === "all" || p.department_id === deptFilter;
     return matchesSearch && matchesStatus && matchesDept;
   });
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navbar */}
       <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
@@ -36,12 +39,10 @@ const ProjectsPage = () => {
           </nav>
           <div className="flex items-center gap-3">
             <Link to="/login"><Button variant="outline" size="sm">Staff Login</Button></Link>
-            <Link to="/dashboard"><Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">Dashboard</Button></Link>
           </div>
         </div>
       </header>
 
-      {/* Hero */}
       <section className="hero-gradient py-16">
         <div className="container text-center">
           <h1 className="text-3xl font-bold text-primary-foreground lg:text-4xl">All County Projects</h1>
@@ -49,7 +50,6 @@ const ProjectsPage = () => {
         </div>
       </section>
 
-      {/* Filters */}
       <div className="container -mt-6 relative z-10">
         <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 card-shadow sm:flex-row sm:items-center">
           <div className="relative flex-1">
@@ -75,47 +75,54 @@ const ProjectsPage = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Departments</SelectItem>
-              {departments.map((d) => (
-                <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+              {departments?.map((d) => (
+                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {/* Results */}
       <div className="container py-10">
-        <p className="mb-6 text-sm text-muted-foreground">{filtered.length} project{filtered.length !== 1 ? "s" : ""} found</p>
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((project) => (
-            <div key={project.id} className="group flex flex-col rounded-xl border bg-card p-5 card-shadow transition-all hover:card-shadow-hover hover:-translate-y-0.5">
-              <div className="mb-3 flex items-start justify-between">
-                <Badge className={getStatusColor(project.status) + " capitalize text-xs"}>{project.status.replace("_", " ")}</Badge>
-                {project.isFlagship && <Badge variant="outline" className="border-accent text-accent text-[10px]">Flagship</Badge>}
-              </div>
-              <h3 className="mb-2 font-bold font-display text-foreground group-hover:text-primary transition-colors">{project.title}</h3>
-              <p className="mb-3 text-sm text-muted-foreground line-clamp-2 flex-1">{project.description}</p>
-              <div className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <MapPin className="h-3 w-3" /> {project.ward}, {project.subcounty}
-              </div>
-              <div className="mb-2 flex justify-between text-xs">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-semibold text-foreground">{project.completionPercentage}%</span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div className="h-full rounded-full bg-secondary transition-all" style={{ width: `${project.completionPercentage}%` }} />
-              </div>
-              <div className="mt-3 flex justify-between text-xs text-muted-foreground">
-                <span>Budget: <span className="font-medium text-foreground">{formatCurrency(project.budgetAllocation)}</span></span>
-                <span>{project.department}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-        {filtered.length === 0 && (
-          <div className="py-20 text-center">
-            <p className="text-lg text-muted-foreground">No projects match your filters.</p>
+        {isLoading ? (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-64 rounded-xl" />)}
           </div>
+        ) : (
+          <>
+            <p className="mb-6 text-sm text-muted-foreground">{filtered.length} project{filtered.length !== 1 ? "s" : ""} found</p>
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((project) => (
+                <div key={project.id} className="group flex flex-col rounded-xl border bg-card p-5 card-shadow transition-all hover:card-shadow-hover hover:-translate-y-0.5">
+                  <div className="mb-3 flex items-start justify-between">
+                    <Badge className={getStatusColor(project.status) + " capitalize text-xs"}>{project.status.replace("_", " ")}</Badge>
+                    {project.is_flagship && <Badge variant="outline" className="border-accent text-accent text-[10px]">Flagship</Badge>}
+                  </div>
+                  <h3 className="mb-2 font-bold font-display text-foreground group-hover:text-primary transition-colors">{project.title}</h3>
+                  <p className="mb-3 text-sm text-muted-foreground line-clamp-2 flex-1">{project.description}</p>
+                  <div className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3" /> {project.ward}, {project.subcounty}
+                  </div>
+                  <div className="mb-2 flex justify-between text-xs">
+                    <span className="text-muted-foreground">Progress</span>
+                    <span className="font-semibold text-foreground">{project.completion_percentage}%</span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-secondary transition-all" style={{ width: `${project.completion_percentage}%` }} />
+                  </div>
+                  <div className="mt-3 flex justify-between text-xs text-muted-foreground">
+                    <span>Budget: <span className="font-medium text-foreground">{formatCurrency(Number(project.budget_allocation))}</span></span>
+                    <span>{(project as any).departments?.name ?? "—"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {filtered.length === 0 && (
+              <div className="py-20 text-center">
+                <p className="text-lg text-muted-foreground">No projects match your filters.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
