@@ -14,16 +14,173 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      departments: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          department: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          actual_completion_date: string | null
+          budget_allocation: number
+          completion_percentage: number
+          county: string
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          description: string | null
+          expected_completion_date: string | null
+          expenditure: number
+          id: string
+          is_flagship: boolean
+          project_type: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["project_status"]
+          subcounty: string | null
+          title: string
+          updated_at: string
+          ward: string | null
+        }
+        Insert: {
+          actual_completion_date?: string | null
+          budget_allocation?: number
+          completion_percentage?: number
+          county?: string
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          expected_completion_date?: string | null
+          expenditure?: number
+          id?: string
+          is_flagship?: boolean
+          project_type?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          subcounty?: string | null
+          title: string
+          updated_at?: string
+          ward?: string | null
+        }
+        Update: {
+          actual_completion_date?: string | null
+          budget_allocation?: number
+          completion_percentage?: number
+          county?: string
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          expected_completion_date?: string | null
+          expenditure?: number
+          id?: string
+          is_flagship?: boolean
+          project_type?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          subcounty?: string | null
+          title?: string
+          updated_at?: string
+          ward?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "staff" | "executive" | "admin"
+      project_status:
+        | "planning"
+        | "ongoing"
+        | "completed"
+        | "on_hold"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +307,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["staff", "executive", "admin"],
+      project_status: [
+        "planning",
+        "ongoing",
+        "completed",
+        "on_hold",
+        "cancelled",
+      ],
+    },
   },
 } as const
