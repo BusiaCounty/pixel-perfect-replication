@@ -17,6 +17,8 @@ import DepartmentsPage from "./pages/DepartmentsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import LocationsPage from "./pages/LocationsPage";
 import SuperAdminPage from "./pages/SuperAdminPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +33,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route
               path="/dashboard"
               element={

@@ -38,10 +38,11 @@ const LoginPage = () => {
         });
       }
       setTimeout(() => navigate("/dashboard"), 500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: "Error",
-        description: err.message,
+        description:
+          err instanceof Error ? err.message : "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
