@@ -12,7 +12,18 @@ import {
   X,
   RefreshCw,
   AlertTriangle,
+  Palette,
+  Globe,
+  Eye,
+  RotateCcw,
 } from "lucide-react";
+import {
+  loadHomeConfig,
+  saveHomeConfig,
+  applyHomeConfig,
+  DEFAULT_HOME_CONFIG,
+  type HomePageConfig,
+} from "@/lib/home-config";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1156,6 +1167,655 @@ function AppSettingsTab() {
 }
 
 // ─────────────────────────────────────────────
+// HOME PAGE CUSTOMIZER TAB
+// ─────────────────────────────────────────────
+const BODY_FONTS = [
+  "Inter",
+  "Roboto",
+  "Poppins",
+  "Lato",
+  "Montserrat",
+  "Open Sans",
+  "Nunito",
+];
+const HEADING_FONTS = [
+  "Playfair Display",
+  "Inter",
+  "Roboto",
+  "Poppins",
+  "Montserrat",
+  "Merriweather",
+];
+
+function ColorField({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+        {label}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          id={id}
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-9 w-9 rounded-md border border-input cursor-pointer p-0.5 bg-transparent"
+        />
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 font-mono text-xs h-9"
+          placeholder="#rrggbb"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ToggleField({
+  id,
+  label,
+  description,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  description?: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
+      <div>
+        <p className="text-sm font-medium text-foreground">{label}</p>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+        )}
+      </div>
+      <button
+        id={id}
+        onClick={() => onChange(!value)}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+          value ? "bg-primary" : "bg-muted-foreground/30"
+        }`}
+        role="switch"
+        aria-checked={value}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${
+            value ? "translate-x-6" : "translate-x-1"
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+
+function HomePageTab() {
+  const { toast } = useToast();
+  const [cfg, setCfg] = useState<HomePageConfig>(() => loadHomeConfig());
+  const [dirty, setDirty] = useState(false);
+
+  const update = <K extends keyof HomePageConfig>(
+    key: K,
+    value: HomePageConfig[K],
+  ) => {
+    setCfg((prev) => ({ ...prev, [key]: value }));
+    setDirty(true);
+  };
+
+  const handleSave = () => {
+    saveHomeConfig(cfg);
+    applyHomeConfig(cfg);
+    // Broadcast to other tabs/windows (Index.tsx listens for this)
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "pmts_home_config",
+        newValue: JSON.stringify(cfg),
+      }),
+    );
+    setDirty(false);
+    toast({
+      title: "Home page updated",
+      description: "Changes are live on the public site.",
+    });
+  };
+
+  const handleReset = () => {
+    setCfg(DEFAULT_HOME_CONFIG);
+    setDirty(true);
+  };
+
+  const labelCls = "text-xs font-medium text-muted-foreground mb-1 block";
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">
+            Home Page Customizer
+          </h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Configure every aspect of the public-facing home page.
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <Button
+            id="homepage-reset-btn"
+            variant="outline"
+            size="sm"
+            onClick={handleReset}
+            className="gap-1.5"
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> Reset
+          </Button>
+          <Button
+            id="homepage-save-btn"
+            size="sm"
+            onClick={handleSave}
+            disabled={!dirty}
+            className="gap-1.5"
+          >
+            <Check className="h-3.5 w-3.5" /> Save & Publish
+          </Button>
+        </div>
+      </div>
+
+      {dirty && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 px-4 py-2.5 text-sm text-amber-800 dark:text-amber-200">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            You have unsaved changes — click <strong>Save & Publish</strong> to
+            apply them.
+          </span>
+        </div>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        {/* ── LEFT: Controls ─────────────────── */}
+        <div className="xl:col-span-2 space-y-5">
+          {/* Brand */}
+          <div className="rounded-xl border bg-card p-5 shadow-sm">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Globe className="h-4 w-4 text-primary" /> Brand Identity
+            </h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelCls}>Site Name</label>
+                <Input
+                  id="hp-site-name"
+                  value={cfg.siteName}
+                  onChange={(e) => update("siteName", e.target.value)}
+                  placeholder="County PMTS"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Tagline (shown under logo)</label>
+                <Input
+                  id="hp-tagline"
+                  value={cfg.tagline}
+                  onChange={(e) => update("tagline", e.target.value)}
+                  placeholder="Optional tagline"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Logo Style</label>
+                <Select
+                  value={cfg.logoType}
+                  onValueChange={(v) =>
+                    update("logoType", v as HomePageConfig["logoType"])
+                  }
+                >
+                  <SelectTrigger id="hp-logo-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="both">Icon + Text</SelectItem>
+                    <SelectItem value="icon">Icon only</SelectItem>
+                    <SelectItem value="text">Text only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className={labelCls}>Footer Text</label>
+                <Input
+                  id="hp-footer-text"
+                  value={cfg.footerText}
+                  onChange={(e) => update("footerText", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Hero Content */}
+          <div className="rounded-xl border bg-card p-5 shadow-sm">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Eye className="h-4 w-4 text-primary" /> Hero Section Content
+            </h3>
+            <div className="grid gap-4">
+              <div>
+                <label className={labelCls}>Hero Title</label>
+                <Input
+                  id="hp-hero-title"
+                  value={cfg.heroTitle}
+                  onChange={(e) => update("heroTitle", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Hero Subtitle</label>
+                <Textarea
+                  id="hp-hero-subtitle"
+                  value={cfg.heroSubtitle}
+                  onChange={(e) => update("heroSubtitle", e.target.value)}
+                  rows={2}
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label className={labelCls}>Badge Text</label>
+                  <Input
+                    id="hp-badge-text"
+                    value={cfg.heroBadgeText}
+                    onChange={(e) => update("heroBadgeText", e.target.value)}
+                    placeholder="Leave blank to hide"
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Primary Button</label>
+                  <Input
+                    id="hp-primary-btn"
+                    value={cfg.heroPrimaryBtnText}
+                    onChange={(e) =>
+                      update("heroPrimaryBtnText", e.target.value)
+                    }
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Secondary Button</label>
+                  <Input
+                    id="hp-secondary-btn"
+                    value={cfg.heroSecondaryBtnText}
+                    onChange={(e) =>
+                      update("heroSecondaryBtnText", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Hero Layout</label>
+                <Select
+                  value={cfg.heroLayout}
+                  onValueChange={(v) =>
+                    update("heroLayout", v as HomePageConfig["heroLayout"])
+                  }
+                >
+                  <SelectTrigger id="hp-hero-layout">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="centered">Centered</SelectItem>
+                    <SelectItem value="left-aligned">Left Aligned</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Colors */}
+          <div className="rounded-xl border bg-card p-5 shadow-sm">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Palette className="h-4 w-4 text-primary" /> Colors
+            </h3>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <ColorField
+                id="hp-primary-color"
+                label="Primary Color"
+                value={cfg.primaryColor}
+                onChange={(v) => update("primaryColor", v)}
+              />
+              <ColorField
+                id="hp-secondary-color"
+                label="Secondary / Accent"
+                value={cfg.secondaryColor}
+                onChange={(v) => update("secondaryColor", v)}
+              />
+              <ColorField
+                id="hp-accent-color"
+                label="Button Accent"
+                value={cfg.accentColor}
+                onChange={(v) => update("accentColor", v)}
+              />
+              <ColorField
+                id="hp-gradient-from"
+                label="Hero Gradient — Start"
+                value={cfg.heroGradientFrom}
+                onChange={(v) => update("heroGradientFrom", v)}
+              />
+              <ColorField
+                id="hp-gradient-to"
+                label="Hero Gradient — End"
+                value={cfg.heroGradientTo}
+                onChange={(v) => update("heroGradientTo", v)}
+              />
+            </div>
+          </div>
+
+          {/* Typography */}
+          <div className="rounded-xl border bg-card p-5 shadow-sm">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Settings2 className="h-4 w-4 text-primary" /> Typography
+            </h3>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className={labelCls}>Body Font</label>
+                <Select
+                  value={cfg.bodyFont}
+                  onValueChange={(v) => update("bodyFont", v)}
+                >
+                  <SelectTrigger id="hp-body-font">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BODY_FONTS.map((f) => (
+                      <SelectItem
+                        key={f}
+                        value={f}
+                        style={{ fontFamily: `'${f}', sans-serif` }}
+                      >
+                        {f}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className={labelCls}>Heading Font</label>
+                <Select
+                  value={cfg.headingFont}
+                  onValueChange={(v) => update("headingFont", v)}
+                >
+                  <SelectTrigger id="hp-heading-font">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {HEADING_FONTS.map((f) => (
+                      <SelectItem
+                        key={f}
+                        value={f}
+                        style={{ fontFamily: `'${f}', serif` }}
+                      >
+                        {f}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className={labelCls}>Base Font Size</label>
+                <Select
+                  value={cfg.baseFontSize}
+                  onValueChange={(v) =>
+                    update("baseFontSize", v as HomePageConfig["baseFontSize"])
+                  }
+                >
+                  <SelectTrigger id="hp-font-size">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sm">Small (14px)</SelectItem>
+                    <SelectItem value="md">Medium (16px)</SelectItem>
+                    <SelectItem value="lg">Large (18px)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Section visibility */}
+          <div className="rounded-xl border bg-card p-5 shadow-sm">
+            <h3 className="font-semibold text-foreground mb-4">
+              Section Visibility
+            </h3>
+            <div className="space-y-3">
+              <ToggleField
+                id="hp-show-stats"
+                label="Stats Bar"
+                description="4-card overview beneath the hero"
+                value={cfg.showStats}
+                onChange={(v) => update("showStats", v)}
+              />
+              <ToggleField
+                id="hp-show-flagship"
+                label="Flagship Projects"
+                description="Highlighted key projects grid"
+                value={cfg.showFlagship}
+                onChange={(v) => update("showFlagship", v)}
+              />
+              <ToggleField
+                id="hp-show-depts"
+                label="Departments Overview"
+                description="Grid of county departments"
+                value={cfg.showDepartments}
+                onChange={(v) => update("showDepartments", v)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── RIGHT: Live Mini-Preview ─────── */}
+        <div className="xl:col-span-1">
+          <div className="sticky top-24">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Eye className="h-4 w-4 text-primary" /> Live Preview
+            </h3>
+            <div className="rounded-xl border overflow-hidden shadow-md text-[10px] select-none">
+              {/* Mini navbar */}
+              <div className="flex items-center justify-between px-3 py-2 bg-card border-b gap-2">
+                <div className="flex items-center gap-1.5">
+                  {(cfg.logoType === "icon" || cfg.logoType === "both") && (
+                    <div
+                      className="h-5 w-5 rounded flex items-center justify-center"
+                      style={{ backgroundColor: cfg.primaryColor }}
+                    >
+                      <Building2 className="h-3 w-3 text-white" />
+                    </div>
+                  )}
+                  {(cfg.logoType === "text" || cfg.logoType === "both") && (
+                    <span
+                      className="font-bold text-foreground"
+                      style={{
+                        fontFamily: `'${cfg.headingFont}', serif`,
+                        fontSize: "10px",
+                      }}
+                    >
+                      {cfg.siteName}
+                    </span>
+                  )}
+                </div>
+                <div
+                  className="rounded px-2 py-0.5 text-white"
+                  style={{ backgroundColor: cfg.primaryColor, fontSize: "8px" }}
+                >
+                  Login
+                </div>
+              </div>
+
+              {/* Mini hero */}
+              <div
+                className="px-4 py-6"
+                style={{
+                  background: `linear-gradient(135deg, ${cfg.heroGradientFrom}, ${cfg.heroGradientTo})`,
+                }}
+              >
+                <div
+                  className={`${cfg.heroLayout === "centered" ? "text-center" : "text-left"}`}
+                >
+                  {cfg.heroBadgeText && (
+                    <div
+                      className="inline-block mb-2 rounded-full border border-white/30 bg-white/20 px-2 py-0.5 text-white"
+                      style={{ fontSize: "7px" }}
+                    >
+                      {cfg.heroBadgeText}
+                    </div>
+                  )}
+                  <div
+                    className="font-bold text-white mb-1 leading-tight"
+                    style={{
+                      fontFamily: `'${cfg.headingFont}', serif`,
+                      fontSize: "11px",
+                    }}
+                  >
+                    {cfg.heroTitle.length > 60
+                      ? cfg.heroTitle.slice(0, 60) + "…"
+                      : cfg.heroTitle}
+                  </div>
+                  <div
+                    className="text-white/75 mb-3 leading-snug"
+                    style={{ fontSize: "7px" }}
+                  >
+                    {cfg.heroSubtitle.length > 80
+                      ? cfg.heroSubtitle.slice(0, 80) + "…"
+                      : cfg.heroSubtitle}
+                  </div>
+                  <div
+                    className={`flex gap-1.5 ${cfg.heroLayout === "centered" ? "justify-center" : ""}`}
+                  >
+                    <div
+                      className="rounded px-2 py-1 font-semibold text-black"
+                      style={{
+                        backgroundColor: cfg.accentColor,
+                        fontSize: "7px",
+                      }}
+                    >
+                      {cfg.heroPrimaryBtnText}
+                    </div>
+                    <div
+                      className="rounded px-2 py-1 border border-white/40 text-white"
+                      style={{ fontSize: "7px" }}
+                    >
+                      {cfg.heroSecondaryBtnText}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mini stats */}
+              {cfg.showStats && (
+                <div className="grid grid-cols-4 gap-1 p-2 bg-background">
+                  {["Projects", "Complete", "Budget", "Ongoing"].map((s) => (
+                    <div
+                      key={s}
+                      className="rounded border bg-card p-1.5 text-center"
+                    >
+                      <div
+                        className="font-bold text-foreground"
+                        style={{ fontSize: "9px" }}
+                      >
+                        —
+                      </div>
+                      <div
+                        className="text-muted-foreground"
+                        style={{ fontSize: "6px" }}
+                      >
+                        {s}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Mini sections */}
+              <div className="p-2 bg-background space-y-1.5">
+                {cfg.showFlagship && (
+                  <div className="rounded border p-2">
+                    <div
+                      className="font-semibold text-foreground mb-1"
+                      style={{
+                        fontFamily: `'${cfg.headingFont}', serif`,
+                        fontSize: "8px",
+                      }}
+                    >
+                      Flagship Projects
+                    </div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {[1, 2].map((i) => (
+                        <div key={i} className="rounded bg-muted h-6" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {cfg.showDepartments && (
+                  <div className="rounded border p-2 bg-muted/30">
+                    <div
+                      className="font-semibold text-foreground mb-1 text-center"
+                      style={{
+                        fontFamily: `'${cfg.headingFont}', serif`,
+                        fontSize: "8px",
+                      }}
+                    >
+                      Departments
+                    </div>
+                    <div className="grid grid-cols-3 gap-1">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="rounded bg-card border h-5" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Mini footer */}
+              <div className="border-t bg-card px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <Building2
+                      className="h-2.5 w-2.5"
+                      style={{ color: cfg.primaryColor }}
+                    />
+                    <span
+                      className="font-bold text-foreground"
+                      style={{ fontSize: "7px" }}
+                    >
+                      {cfg.siteName}
+                    </span>
+                  </div>
+                  <span
+                    className="text-muted-foreground"
+                    style={{
+                      fontSize: "6px",
+                      maxWidth: 80,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {cfg.footerText}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground text-center mt-2">
+              Mini preview — not to scale
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // ROOT PAGE
 // ─────────────────────────────────────────────
 const SuperAdminPage = () => {
@@ -1187,7 +1847,7 @@ const SuperAdminPage = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="users" id="admin-tabs">
-        <TabsList className="mb-2 h-10 gap-1">
+        <TabsList className="mb-2 h-10 gap-1 flex-wrap">
           <TabsTrigger
             value="users"
             id="admin-tab-users"
@@ -1210,6 +1870,13 @@ const SuperAdminPage = () => {
             <Building2 className="h-3.5 w-3.5" /> Departments
           </TabsTrigger>
           <TabsTrigger
+            value="homepage"
+            id="admin-tab-homepage"
+            className="gap-1.5 text-xs sm:text-sm"
+          >
+            <Palette className="h-3.5 w-3.5" /> Home Page
+          </TabsTrigger>
+          <TabsTrigger
             value="settings"
             id="admin-tab-settings"
             className="gap-1.5 text-xs sm:text-sm"
@@ -1226,6 +1893,9 @@ const SuperAdminPage = () => {
         </TabsContent>
         <TabsContent value="departments">
           <DepartmentsTab />
+        </TabsContent>
+        <TabsContent value="homepage">
+          <HomePageTab />
         </TabsContent>
         <TabsContent value="settings">
           <AppSettingsTab />
