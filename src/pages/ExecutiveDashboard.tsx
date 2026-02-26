@@ -1,7 +1,9 @@
 import { BarChart3, CheckCircle2, Clock, TrendingUp, AlertTriangle, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { dashboardStats, projects, statusCounts, monthlyBudgetData, formatCurrency, getStatusColor, departments } from "@/lib/mock-data";
+import { formatCurrency, getStatusColor } from "@/lib/mock-data";
+import { useProjects, useDashboardStats, useDepartments } from "@/hooks/use-projects";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const KpiCard = ({ icon: Icon, label, value, change, changeType }: { icon: any; label: string; value: string; change?: string; changeType?: "up" | "down" }) => (
   <div className="rounded-xl border bg-card p-5 card-shadow animate-fade-in">
@@ -28,9 +30,36 @@ const PIE_COLORS = [
   "hsl(0, 72%, 51%)",
 ];
 
+const monthlyBudgetData = [
+  { month: "Jul", budget: 380, expenditure: 210 },
+  { month: "Aug", budget: 420, expenditure: 250 },
+  { month: "Sep", budget: 460, expenditure: 290 },
+  { month: "Oct", budget: 510, expenditure: 340 },
+  { month: "Nov", budget: 540, expenditure: 380 },
+  { month: "Dec", budget: 580, expenditure: 420 },
+  { month: "Jan", budget: 620, expenditure: 460 },
+  { month: "Feb", budget: 650, expenditure: 490 },
+];
+
 const ExecutiveDashboard = () => {
-  const recentProjects = projects.slice(0, 5);
-  const budgetUtilization = Math.round((dashboardStats.totalExpenditure / dashboardStats.totalBudget) * 100);
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: departments } = useDepartments();
+
+  if (statsLoading || projectsLoading) {
+    return (
+      <div className="space-y-6">
+        <div><h1 className="text-2xl font-bold font-display text-foreground">Executive Dashboard</h1></div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+        </div>
+      </div>
+    );
+  }
+
+  const recentProjects = projects?.slice(0, 5) ?? [];
+  const budgetUtilization = stats ? Math.round((stats.totalExpenditure / stats.totalBudget) * 100) || 0 : 0;
+  const statusCounts = stats?.statusCounts ?? [];
 
   return (
     <div className="space-y-6">
@@ -39,17 +68,14 @@ const ExecutiveDashboard = () => {
         <p className="text-sm text-muted-foreground">Overview of county project performance and financials</p>
       </div>
 
-      {/* KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard icon={BarChart3} label="Total Projects" value={dashboardStats.totalProjects.toString()} change="12%" changeType="up" />
-        <KpiCard icon={CheckCircle2} label="Completed Projects" value={dashboardStats.completedProjects.toString()} change="8%" changeType="up" />
-        <KpiCard icon={DollarSign} label="Total Budget" value={formatCurrency(dashboardStats.totalBudget)} />
-        <KpiCard icon={TrendingUp} label="Budget Utilization" value={`${budgetUtilization}%`} change="5%" changeType="up" />
+        <KpiCard icon={BarChart3} label="Total Projects" value={stats?.totalProjects.toString() ?? "0"} />
+        <KpiCard icon={CheckCircle2} label="Completed Projects" value={stats?.completedProjects.toString() ?? "0"} />
+        <KpiCard icon={DollarSign} label="Total Budget" value={formatCurrency(stats?.totalBudget ?? 0)} />
+        <KpiCard icon={TrendingUp} label="Budget Utilization" value={`${budgetUtilization}%`} />
       </div>
 
-      {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Budget trend */}
         <div className="lg:col-span-2 rounded-xl border bg-card p-5 card-shadow">
           <h3 className="mb-4 font-semibold text-foreground">Budget vs Expenditure (KES Millions)</h3>
           <ResponsiveContainer width="100%" height={280}>
@@ -64,7 +90,6 @@ const ExecutiveDashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Status pie */}
         <div className="rounded-xl border bg-card p-5 card-shadow">
           <h3 className="mb-4 font-semibold text-foreground">Project Status</h3>
           <ResponsiveContainer width="100%" height={200}>
@@ -91,7 +116,6 @@ const ExecutiveDashboard = () => {
         </div>
       </div>
 
-      {/* Recent Projects + Departments */}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border bg-card p-5 card-shadow">
           <h3 className="mb-4 font-semibold text-foreground">Recent Projects</h3>
@@ -100,7 +124,7 @@ const ExecutiveDashboard = () => {
               <div key={p.id} className="flex items-center justify-between rounded-lg border p-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground truncate">{p.title}</p>
-                  <p className="text-xs text-muted-foreground">{p.department}</p>
+                  <p className="text-xs text-muted-foreground">{(p as any).departments?.name ?? "—"}</p>
                 </div>
                 <Badge className={getStatusColor(p.status) + " text-[10px] capitalize ml-3 shrink-0"}>{p.status.replace("_", " ")}</Badge>
               </div>
@@ -109,35 +133,26 @@ const ExecutiveDashboard = () => {
         </div>
 
         <div className="rounded-xl border bg-card p-5 card-shadow">
-          <h3 className="mb-4 font-semibold text-foreground">Department Performance</h3>
+          <h3 className="mb-4 font-semibold text-foreground">Departments</h3>
           <div className="space-y-3">
-            {departments.map((d) => {
-              const utilization = Math.round((d.totalExpenditure / d.totalBudget) * 100);
-              return (
-                <div key={d.id} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-foreground font-medium truncate">{d.name}</span>
-                    <span className="text-xs text-muted-foreground ml-2">{utilization}%</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-secondary transition-all" style={{ width: `${utilization}%` }} />
-                  </div>
-                </div>
-              );
-            })}
+            {departments?.map((d) => (
+              <div key={d.id} className="flex items-center justify-between rounded-lg border p-3">
+                <span className="text-sm font-medium text-foreground">{d.name}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Alerts */}
       <div className="rounded-xl border border-warning/30 bg-warning/5 p-4">
         <div className="flex items-center gap-2 mb-2">
           <AlertTriangle className="h-4 w-4 text-warning" />
           <h3 className="font-semibold text-sm text-foreground">Attention Required</h3>
         </div>
         <ul className="space-y-1 text-sm text-muted-foreground">
-          <li>• <strong>Sewerage Treatment Plant</strong> — Project on hold, awaiting environmental assessment</li>
-          <li>• <strong>3 projects</strong> have exceeded 80% budget utilization with less than 50% completion</li>
+          {projects?.filter((p) => p.status === "on_hold").map((p) => (
+            <li key={p.id}>• <strong>{p.title}</strong> — Project on hold</li>
+          ))}
         </ul>
       </div>
     </div>

@@ -5,18 +5,30 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { projects, formatCurrency, getStatusColor } from "@/lib/mock-data";
+import { formatCurrency, getStatusColor } from "@/lib/mock-data";
 import { Progress } from "@/components/ui/progress";
+import { useProjects } from "@/hooks/use-projects";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const StaffProjectsPage = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { data: projects, isLoading } = useProjects();
 
-  const filtered = projects.filter((p) => {
+  const filtered = (projects ?? []).filter((p) => {
     const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || p.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-96 rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -72,17 +84,17 @@ const StaffProjectsPage = () => {
                     </p>
                   </div>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">{p.department}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{(p as any).departments?.name ?? "—"}</TableCell>
                 <TableCell>
                   <Badge className={getStatusColor(p.status) + " capitalize text-[10px]"}>{p.status.replace("_", " ")}</Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2 min-w-[120px]">
-                    <Progress value={p.completionPercentage} className="h-1.5 flex-1" />
-                    <span className="text-xs font-medium text-foreground w-8 text-right">{p.completionPercentage}%</span>
+                    <Progress value={p.completion_percentage} className="h-1.5 flex-1" />
+                    <span className="text-xs font-medium text-foreground w-8 text-right">{p.completion_percentage}%</span>
                   </div>
                 </TableCell>
-                <TableCell className="text-right text-sm font-medium text-foreground">{formatCurrency(p.budgetAllocation)}</TableCell>
+                <TableCell className="text-right text-sm font-medium text-foreground">{formatCurrency(Number(p.budget_allocation))}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
                     <MoreHorizontal className="h-4 w-4" />

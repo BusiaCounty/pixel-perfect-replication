@@ -1,8 +1,14 @@
 import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
+import { useAuth } from "@/contexts/AuthContext";
 
 const DashboardLayout = () => {
+  const { profile } = useAuth();
+  const initials = profile?.full_name
+    ? profile.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "?";
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
@@ -12,8 +18,9 @@ const DashboardLayout = () => {
             <SidebarTrigger />
             <div className="flex-1" />
             <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground hidden sm:block">{profile?.full_name}</span>
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground">
-                JM
+                {initials}
               </div>
             </div>
           </header>
