@@ -1,7 +1,18 @@
-import { Building2, LayoutDashboard, FolderKanban, BarChart3, MapPin, Users, LogOut } from "lucide-react";
+import {
+  Building2,
+  LayoutDashboard,
+  FolderKanban,
+  BarChart3,
+  MapPin,
+  Users,
+  LogOut,
+  ShieldCheck,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar,
   SidebarContent,
@@ -23,7 +34,21 @@ const navItems = [
 ];
 
 export function DashboardSidebar() {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+
+  const { data: isAdmin } = useQuery({
+    queryKey: ["user-role", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
 
   return (
     <Sidebar className="border-r-0">
@@ -31,11 +56,15 @@ export function DashboardSidebar() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
           <Building2 className="h-4 w-4 text-sidebar-primary-foreground" />
         </div>
-        <span className="font-display font-bold text-sm text-sidebar-foreground">County PMTS</span>
+        <span className="font-display font-bold text-sm text-sidebar-foreground">
+          County PMTS
+        </span>
       </div>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] uppercase tracking-wider">Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/50 text-[10px] uppercase tracking-wider">
+            Navigation
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -53,12 +82,29 @@ export function DashboardSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/dashboard/admin"
+                      className="text-red-500/80 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                      activeClassName="bg-red-50 text-red-600 font-medium dark:bg-red-900/20"
+                    >
+                      <ShieldCheck className="mr-2 h-4 w-4" />
+                      <span>Super Admin</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-3 space-y-1">
-        <Link to="/" className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
+        <Link
+          to="/"
+          className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+        >
           <LogOut className="h-3.5 w-3.5" /> Back to Public Site
         </Link>
         <button
