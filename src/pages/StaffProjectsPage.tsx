@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Plus, MoreHorizontal, MapPin, Lock } from "lucide-react";
+import { Search, MoreHorizontal, MapPin, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ import { Progress } from "@/components/ui/progress";
 import { useProjects } from "@/hooks/use-projects";
 import { useRole } from "@/hooks/use-role";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 
 const StaffProjectsPage = () => {
   const [search, setSearch] = useState("");
@@ -59,11 +60,7 @@ const StaffProjectsPage = () => {
           </p>
         </div>
         {/* Staff can log updates; admin can add new projects via Super Admin */}
-        {isAdmin && (
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus className="mr-2 h-4 w-4" /> New Project
-          </Button>
-        )}
+        {isAdmin && <CreateProjectDialog />}
         {!isExecutiveOrAdmin && (
           <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
             <Lock className="h-3.5 w-3.5" /> Read-only — contact an admin to add
