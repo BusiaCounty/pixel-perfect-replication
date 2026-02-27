@@ -29,7 +29,7 @@ const StaffProjectsPage = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const { data: projects, isLoading } = useProjects();
-  const { isExecutiveOrAdmin, isAdmin } = useRole();
+  const { isExecutiveOrAdmin, isAdmin, isStaff } = useRole();
 
   const filtered = (projects ?? []).filter((p) => {
     const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase());
@@ -60,8 +60,8 @@ const StaffProjectsPage = () => {
           </p>
         </div>
         {/* Staff can log updates; admin can add new projects via Super Admin */}
-        {isAdmin && <CreateProjectDialog />}
-        {!isExecutiveOrAdmin && (
+        {(isAdmin || isStaff) && <CreateProjectDialog />}
+        {!isExecutiveOrAdmin && !isStaff && (
           <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
             <Lock className="h-3.5 w-3.5" /> Read-only — contact an admin to add
             projects
